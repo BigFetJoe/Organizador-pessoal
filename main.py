@@ -8,6 +8,7 @@ import os
 tarefas = []
 ano = dtt.now().year  # Obtém o ano atual
 caminho = os.path.expanduser("~/tarefas.json")  # Caminho do arquivo JSON
+formatos_data = ["%d-%m", "%-d-%-m", "%d-%-m", "%-d-%m"]
 
 #\--\--\--\--\--\--\--\--\--\--\---\--\ JANELA \--\--\--\--\--\--\--\--\--\--\--\--\--\
 janela = tk.Tk()
@@ -22,26 +23,35 @@ janela.geometry("400x600")
 def adicionar_tarefa():
     """Adiciona uma nova tarefa à lista."""
     titulo = entrada_titulo.get().strip()
-    data = entrada_data.get().strip()
-    prioridade = entrada_prioridade.get().strip()
+    data_input = entrada_data.get().strip()
+    prioridade_input = entrada_prioridade.get().strip()
 
-    if not titulo or not data or not prioridade:
-        print("Erro: Todos os campos devem ser preenchidos.")
+    data_obj = None  # será datetime ou None
+
+    if not titulo:
+        print("Erro: A atividade deve ter um título.")
         return
 
-    try:
-        prioridade = int(prioridade)
-        if prioridade < 1 or prioridade > 5:
-            raise ValueError("A prioridade deve estar entre 1 e 5.")
-    except ValueError as e:
-        print(f"Erro: {e}")
+    if data_input:
+        data_input = data_input.replace("/", "-").replace(".", "-").replace(" ", "-")
+        for formato in formatos_data:
+            try:
+                data_obj = dtt.strptime(data_input, formato).replace(year=ano)
+                break
+            except ValueError:
+                continue
+
+    if not prioridade_input.isdigit() or not (1 <= int(prioridade_input) <= 5):
+        print("Erro: prioridade inválida (use 1 a 5).")
         return
 
-    # Adiciona a tarefa à lista
+    prioridade = int(prioridade_input)
+
     tarefas.append({
         "titulo": titulo,
-        "data": data,
-        "prioridade": prioridade,
+        "prazo_formatado": data_obj.strftime("%d-%m-%Y") if data_obj else "sem prazo",
+        "data_obj": data_obj,
+        "prioridade": prioridade
     })
 
     # Limpa os campos de entrada
@@ -49,9 +59,10 @@ def adicionar_tarefa():
     entrada_data.delete(0, tk.END)
     entrada_prioridade.delete(0, tk.END)
 
-    # Atualiza a lista e salva as tarefas
     mostrar_lista()
     salvar_tarefas()
+    entrada_titulo.focus()
+
 
 def concluir_tarefa(event=None):
     """Conclui a tarefa selecionada no Listbox."""
@@ -71,50 +82,54 @@ def mostrar_lista():
 
 
 def calc_score():
-    """Calcula o score de cada tarefa com base no tempo restante e prioridade."""
-    hoje = dtt.now()  # Obtém a data atual uma vez para evitar múltiplas chamadas
+    hoje = dtt.now()
 
     for tarefa in tarefas:
-        try:
-            # Calcula o tempo restante
-            data_limite = dtt.strptime(tarefa["data"], "%d-%m").replace(year=ano)
-            tempo_restante = (data_limite - hoje).days
+        score = 0
+        data_obj = tarefa.get("data_obj")
 
-            # Calcula o score com base no tempo restante e prioridade
+        if data_obj:
+            tempo_restante = (data_obj - hoje).days
+
             if tempo_restante < 0:
-                score = 17  # Tarefa atrasada
+                score += 17
             elif tempo_restante < 3:
-                score = 10
+                score += 12
             elif tempo_restante < 7:
-                score = 5
+                score += 7
             elif tempo_restante < 14:
-                score = 2
-            else:
-                score = 1
+                score += 3
 
-            # Adiciona o peso da prioridade ao score
-            score += tarefa["prioridade"] * 2
+            tarefa["tempo_restante"] = tempo_restante
+        else:
+            score -= 2  # penalidade por não ter prazo
 
-            # Atualiza o score da tarefa
-            tarefa["score"] = score
-            tarefa["tempo_restante"] = tempo_restante  # Adiciona o tempo restante para uso futuro
+        score += tarefa["prioridade"] * 2
+        tarefa["score"] = score
 
-        except ValueError as e:
-            print(f"Erro ao calcular score para a tarefa '{tarefa['titulo']}': {e}")
-            tarefa["score"] = 999  # Define um score padrão para tarefas inválidas
 
 
 def carregar_tarefas():
-    """Carrega as tarefas do arquivo JSON."""
     if os.path.exists(caminho):
         with open(caminho, "r") as arquivo:
-            return json.load(arquivo)
+            dados = json.load(arquivo)
+            for t in dados:
+                if isinstance(t["data_obj"], str) and t["data_obj"] != "None":
+                    t["data_obj"] = dtt.strptime(t["data_obj"], "%Y-%m-%d %H:%M:%S")
+            return dados
     return []
 
 def salvar_tarefas():
-    """Salva as tarefas no arquivo JSON."""
+    tarefas_serializadas = []
+    for tarefa in tarefas:
+        tarefa_copy = tarefa.copy()
+        if isinstance(tarefa_copy["data_obj"], dtt):
+            tarefa_copy["data_obj"] = tarefa_copy["data_obj"].strftime("%Y-%m-%d %H:%M:%S")
+        tarefas_serializadas.append(tarefa_copy)
+
     with open(caminho, "w", encoding="utf-8") as f:
-        json.dump(tarefas, f, indent=4)
+        json.dump(tarefas_serializadas, f, indent=4)
+
 
 #\--\--\--\--\--\--\--\--\--\--\---\--\ WIDGETS \--\--\--\--\--\--\--\--\--\--\--\--\--\
 # Frame de Título
