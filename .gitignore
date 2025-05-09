@@ -1,0 +1,15 @@
+# Arquivos Python
+__pycache__/
+*.pyc
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Dados locais (opcional)
+tarefas.json
