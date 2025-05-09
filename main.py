@@ -98,7 +98,9 @@ def calc_score():
             score += (5 - prioridade) * 2
         else:
             score -= 2  # penalidade para tarefas sem prioridade
-            tarefa["score"] = score
+        
+        
+        tarefa["score"] = score
 
 ### --- ### FUNÇÕES AUXILIARES ### --- ###
 
