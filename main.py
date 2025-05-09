@@ -18,7 +18,17 @@ janela.geometry("400x600")
 
 
 # \--\--\--\--\--\--\--\--\--\ FUNÇÕES \--\--\--\--\--\--\--\--\--\--\--\--\--\--\--\
+# adicionar_tarefa: Adiciona uma nova tarefa à lista
+# calc_score: Calcula o score de cada tarefa
+# concluir_tarefa: Conclui a tarefa selecionada
+# mostrar_lista: Exibe a lista de tarefas
+# interpretar_data: Interpreta a data fornecida pelo usuário
+# serializar_tarefa: Serializa a tarefa para salvar no JSON
+# desserializar_tarefa: Desserializa a tarefa ao carregar do JSON
+# carregar_tarefas: Carrega as tarefas do arquivo JSON
+# salvar_tarefas: Salva as tarefas no arquivo JSON
 
+### --- ### FUNÇÕES PRINCIPAIS ### --- ###
 
 def adicionar_tarefa():
     """Adiciona uma nova tarefa à lista."""
@@ -34,12 +44,7 @@ def adicionar_tarefa():
 
     if data_input:
         data_input = data_input.replace("/", "-").replace(".", "-").replace(" ", "-")
-        for formato in formatos_data:
-            try:
-                data_obj = dtt.strptime(data_input, formato).replace(year=ano)
-                break
-            except ValueError:
-                continue
+        data_obj = interpretar_data(data_input)
 
     if not prioridade_input.isdigit() or not (1 <= int(prioridade_input) <= 5):
         print("Erro: prioridade inválida (use 1 a 5).")
@@ -62,24 +67,6 @@ def adicionar_tarefa():
     mostrar_lista()
     salvar_tarefas()
     entrada_titulo.focus()
-
-
-def concluir_tarefa(event=None):
-    """Conclui a tarefa selecionada no Listbox."""
-    selecao = lista.curselection()
-    if selecao:
-        indice = selecao[0]
-        tarefas.pop(indice)  # Remove a tarefa da lista
-        mostrar_lista()  # Atualiza a lista exibida
-        salvar_tarefas()  # Salva as alterações no arquivo JSON
-
-def mostrar_lista():
-    """Exibe as tarefas no Listbox."""
-    lista.delete(0, tk.END)  # Limpa o Listbox
-    calc_score()
-    for tarefa in sorted(tarefas, key=lambda x: x["score"], reverse=True):
-        lista.insert(tk.END, tarefa["titulo"])
-
 
 def calc_score():
     hoje = dtt.now()
@@ -104,29 +91,67 @@ def calc_score():
         else:
             score -= 2  # penalidade por não ter prazo
 
-        score += tarefa["prioridade"] * 2
-        tarefa["score"] = score
 
+        prioridade = tarefa.get("prioridade")
 
+        if isinstance(prioridade, int):
+            score += (5 - prioridade) * 2
+        else:
+            score -= 2  # penalidade para tarefas sem prioridade
+            tarefa["score"] = score
+
+### --- ### FUNÇÕES AUXILIARES ### --- ###
+
+def mostrar_lista():
+    """Exibe as tarefas no Listbox."""
+    lista.delete(0, tk.END)  # Limpa o Listbox
+    calc_score()
+    for tarefa in sorted(tarefas, key=lambda x: x["score"], reverse=True):
+        lista.insert(tk.END, tarefa["titulo"])
+
+def concluir_tarefa(event=None):
+    """Conclui a tarefa selecionada no Listbox."""
+    selecao = lista.curselection()
+    if selecao:
+        indice = selecao[0]
+        tarefas.pop(indice)  # Remove a tarefa da lista
+        mostrar_lista()  # Atualiza a lista exibida
+        salvar_tarefas()  # Salva as alterações no arquivo JSON
+
+def interpretar_data(texto_data: str) -> dtt | None:
+    if not texto_data:
+        return None
+
+    texto_data = texto_data.replace("/", "-").replace(".", "-").replace(" ", "-")
+    for formato in formatos_data:
+        try:
+            return dtt.strptime(texto_data, formato).replace(year=ano)
+        except ValueError:
+            continue
+    return None
+
+### --- ### SALVAR E CARREGAR ### --- ###
+
+def serializar_tarefa(tarefa: dict) -> dict:
+    copia = tarefa.copy()  # cria uma cópia para não alterar o original
+    if isinstance(copia["data_obj"], dtt):
+        copia["data_obj"] = copia["data_obj"].strftime("%Y-%m-%d %H:%M:%S")
+    return copia
+
+def desserializar_tarefa(tarefa: dict) -> dict:
+    if isinstance(tarefa.get("data_obj"), str) and tarefa["data_obj"] != "None":
+        tarefa["data_obj"] = dtt.strptime(tarefa["data_obj"], "%Y-%m-%d %H:%M:%S")
+    return tarefa
 
 def carregar_tarefas():
     if os.path.exists(caminho):
         with open(caminho, "r") as arquivo:
             dados = json.load(arquivo)
-            for t in dados:
-                if isinstance(t["data_obj"], str) and t["data_obj"] != "None":
-                    t["data_obj"] = dtt.strptime(t["data_obj"], "%Y-%m-%d %H:%M:%S")
-            return dados
+            return [desserializar_tarefa(t) for t in dados]
     return []
 
 def salvar_tarefas():
-    tarefas_serializadas = []
-    for tarefa in tarefas:
-        tarefa_copy = tarefa.copy()
-        if isinstance(tarefa_copy["data_obj"], dtt):
-            tarefa_copy["data_obj"] = tarefa_copy["data_obj"].strftime("%Y-%m-%d %H:%M:%S")
-        tarefas_serializadas.append(tarefa_copy)
-
+    tarefas_serializadas = [serializar_tarefa(t) for t in tarefas]
     with open(caminho, "w", encoding="utf-8") as f:
         json.dump(tarefas_serializadas, f, indent=4)
 
@@ -135,7 +160,7 @@ def salvar_tarefas():
 # Frame de Título
 frame_titulo = tk.Frame(janela)
 frame_titulo.pack(pady=10, fill="x")
-tk.Label(frame_titulo, text="Organizador de Tarefas", font=("Arial", 16)).pack()
+tk.Label(frame_titulo, text="Organizador de tarefas", font=("Arial", 16)).pack()
 
 # Frame de Entrada
 frame_entrada = tk.Frame(janela)
