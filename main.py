@@ -1,5 +1,7 @@
 import tkinter as tk
 from datetime import datetime as dtt
+import json
+import os 
 
 # Declaração de variáveis globais
 tarefas = []
@@ -86,7 +88,25 @@ def adicionar_tarefa():
     entrada_data.delete(0, tk.END)
     entrada_prioridade.delete(0, tk.END)
 
+    mostrar_lista
+    salvar_tarefas() 
 
+
+def concluir_tarefa():
+    selecao = lista.curselection()
+    if selecao:
+        # Obtém o índice da tarefa selecionada
+        indice = selecao[0]
+        # Remove a tarefa da lista
+        lista.delete(indice)
+        # Remove a tarefa da lista de tarefas
+        tarefas.remove(indice)
+
+        lista.delete(0, tk.END)  # Limpa a lista atual
+        for tarefa in sorted(tarefas, key=lambda x: x["score"], reverse=True):
+             lista.insert(tk.END, tarefa["titulo"])
+        
+        salvar_tarefas()  # Salva as tarefas atualizadas no arquivo JSON
 
 # Botão: Adicionar
 botao_adicionar = tk.Button(janela, text="Adicionar Tarefa", command=adicionar_tarefa)
@@ -101,6 +121,8 @@ ttlframelista.pack(pady=1, side="top", fill="x", expand=False)
 
 lista = tk.Listbox(frame_lista)
 lista.pack(pady=10, fill="both", expand=True)
+lista.bind("<Double-Button-1>", concluir_tarefa)
+
 
 def mostrar_lista():
     
@@ -109,6 +131,17 @@ def mostrar_lista():
         lista.insert(tk.END, tito["titulo"])
 
 
+def carregar_tarefas():
+    if os.path.exists("tarefas.json"):
+        with open("tarefas.json", "r") as arquivo:
+            return json.load(arquivo)
+        for tarefa in tarefas:
+            lista.insert(tk.END, tarefa["titulo"])
+    return []
+
+def salvar_tarefas():
+    with open("tarefas.json", "w") as arquivo:
+        json.dump(tarefas, arquivo, indent=4)
 botao_mostrar = tk.Button(janela, text="mostrar lista", command=mostrar_lista)
 botao_mostrar.pack(padx=10)
 
