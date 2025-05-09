@@ -109,7 +109,10 @@ def mostrar_lista():
     lista.delete(0, tk.END)  # Limpa o Listbox
     calc_score()
     for tarefa in sorted(tarefas, key=lambda x: x["score"], reverse=True):
-        lista.insert(tk.END, tarefa["titulo"])
+        titulo = tarefa["titulo"]
+        prazo = tarefa.get("prazo_formatado", "sem prazo")
+        texto = f"{titulo.ljust(30)} {prazo.rjust(10)}"
+        lista.insert(tk.END, texto)
 
 def concluir_tarefa(event=None):
     """Conclui a tarefa selecionada no Listbox."""
@@ -191,7 +194,6 @@ tk.Label(frame_entrada, text="Prioridade (1 a 5):").grid(row=2, column=1, sticky
 entrada_prioridade = tk.Entry(frame_entrada, width=30)
 entrada_prioridade.grid(row=2, column=2, sticky="ew", padx=5, pady=5)
 entrada_prioridade.bind("<Return>", lambda event: adicionar_tarefa())  # Adiciona tarefa ao pressionar Enter
-
 entrada_titulo.focus()  # Adiciona o foco ao campo de título
 
 # Botão: Adicionar Tarefa
@@ -206,7 +208,7 @@ frame_lista.pack(padx=10, pady=10, fill="both", expand=True)
 tk.Label(frame_lista, text="Lista de Tarefas", bg="lightgray").pack(pady=5, fill="x")
 
 # Listbox
-lista = tk.Listbox(frame_lista)
+lista = tk.Listbox(frame_lista, font=("Consolas", 10))
 lista.pack(pady=10, fill="both", expand=True)
 lista.bind("<Double-Button-1>", concluir_tarefa)
 
