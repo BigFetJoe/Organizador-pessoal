@@ -11,9 +11,13 @@ janela = tk.Tk()  # Instância da janela principal
 janela.title("Organizador de Tarefas")  # Título da janela
 janela.geometry("400x600")  # Tamanho: largura x altura em pixels
 
+# --- Frame de título ---
+frame_titulo = tk.Frame(janela)
+frame_titulo.pack(pady=10, fill="x")
+
 # --- Frame de entrada ---
 frame_entrada = tk.Frame(janela)
-frame_entrada.pack(padx=10, fill="x")
+frame_entrada.pack(padx=10, pady=1, fill="x")
 
 # Campo: Título
 tk.Label(frame_entrada, text="Título:").grid(row=0, column=0)
@@ -93,9 +97,13 @@ frame_lista = tk.Frame(janela, bg="lightgray")
 frame_lista.pack(padx=10, fill="both", expand=True)
 
 ttlframelista = tk.Label(frame_lista, text = "lista de tarefas")
+ttlframelista.pack(pady=1, side="top", fill="x", expand=False)
+
+lista = tk.Listbox(frame_lista)
+lista.pack(pady=10, fill="both", expand=True)
+
 def mostrar_lista():
-    lista = tk.Listbox(frame_lista)
-    lista.pack(pady=10, fill="both", expand=True)
+    
     
     for tito in tarefas:
         lista.insert(tk.END, tito["titulo"])
