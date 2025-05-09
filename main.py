@@ -124,26 +124,33 @@ tk.Label(frame_titulo, text="Organizador de Tarefas", font=("Arial", 16)).pack()
 
 # Frame de Entrada
 frame_entrada = tk.Frame(janela)
-frame_entrada.pack(padx=10, pady=10, fill="x")
+frame_entrada.pack(padx=10, pady=10, fill="x", expand=False)
+
+# Configuração do grid no frame_entrada
+frame_entrada.grid_columnconfigure(0, weight=1)  # Coluna vazia à esquerda
+frame_entrada.grid_columnconfigure(1, weight=0)  # Coluna do rótulo "Título"
+frame_entrada.grid_columnconfigure(2, weight=0)  # Coluna do campo de entrada "Título"
+frame_entrada.grid_columnconfigure(3, weight=1)  # Coluna vazia à direita
 
 # Campo: Título
-tk.Label(frame_entrada, text="Título:").grid(row=0, column=0)
+tk.Label(frame_entrada, text="Título:").grid(row=0, column=1, sticky="w", padx=5, pady=5)
 entrada_titulo = tk.Entry(frame_entrada, width=30)
-entrada_titulo.grid(row=0, column=1)
+entrada_titulo.grid(row=0, column=2, sticky="ew", padx=5, pady=5)
 entrada_titulo.bind("<Return>", lambda event: adicionar_tarefa())  # Adiciona tarefa ao pressionar Enter
 
 # Campo: Data Limite
-tk.Label(frame_entrada, text="Data (DD-MM):").grid(row=1, column=0)
+tk.Label(frame_entrada, text="Data (DD-MM):").grid(row=1, column=1, sticky="w", padx=5, pady=5)
 entrada_data = tk.Entry(frame_entrada, width=30)
-entrada_data.grid(row=1, column=1)
+entrada_data.grid(row=1, column=2, sticky="ew", padx=5, pady=5)
 entrada_data.bind("<Return>", lambda event: adicionar_tarefa())  # Adiciona tarefa ao pressionar Enter
 
 # Campo: Prioridade
-tk.Label(frame_entrada, text="Prioridade (1 a 5):").grid(row=2, column=0)
+tk.Label(frame_entrada, text="Prioridade (1 a 5):").grid(row=2, column=1, sticky="w", padx=5, pady=5)
 entrada_prioridade = tk.Entry(frame_entrada, width=30)
-entrada_prioridade.grid(row=2, column=1)
+entrada_prioridade.grid(row=2, column=2, sticky="ew", padx=5, pady=5)
+entrada_prioridade.bind("<Return>", lambda event: adicionar_tarefa())  # Adiciona tarefa ao pressionar Enter
+
 entrada_titulo.focus()  # Adiciona o foco ao campo de título
-entrada_prioridade.bind("<Return>", lambda event: adicionar_tarefa())  # Adiciona tarefa ao pressionar Enter 
 
 # Botão: Adicionar Tarefa
 botao_adicionar = tk.Button(janela, text="Adicionar Tarefa", command=adicionar_tarefa)
