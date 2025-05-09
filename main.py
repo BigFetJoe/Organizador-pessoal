@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 from datetime import datetime as dtt
 import json
 import os
@@ -129,16 +130,20 @@ frame_entrada.pack(padx=10, pady=10, fill="x")
 tk.Label(frame_entrada, text="Título:").grid(row=0, column=0)
 entrada_titulo = tk.Entry(frame_entrada, width=30)
 entrada_titulo.grid(row=0, column=1)
+entrada_titulo.bind("<Return>", lambda event: adicionar_tarefa())  # Adiciona tarefa ao pressionar Enter
 
 # Campo: Data Limite
 tk.Label(frame_entrada, text="Data (DD-MM):").grid(row=1, column=0)
 entrada_data = tk.Entry(frame_entrada, width=30)
 entrada_data.grid(row=1, column=1)
+entrada_data.bind("<Return>", lambda event: adicionar_tarefa())  # Adiciona tarefa ao pressionar Enter
 
 # Campo: Prioridade
 tk.Label(frame_entrada, text="Prioridade (1 a 5):").grid(row=2, column=0)
 entrada_prioridade = tk.Entry(frame_entrada, width=30)
 entrada_prioridade.grid(row=2, column=1)
+entrada_titulo.focus()  # Adiciona o foco ao campo de título
+entrada_prioridade.bind("<Return>", lambda event: adicionar_tarefa())  # Adiciona tarefa ao pressionar Enter 
 
 # Botão: Adicionar Tarefa
 botao_adicionar = tk.Button(janela, text="Adicionar Tarefa", command=adicionar_tarefa)
