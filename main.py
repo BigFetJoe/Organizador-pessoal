@@ -16,6 +16,8 @@ janela.geometry("400x600")
 
 
 # \--\--\--\--\--\--\--\--\--\ FUNÇÕES \--\--\--\--\--\--\--\--\--\--\--\--\--\--\--\
+
+
 def adicionar_tarefa():
     """Adiciona uma nova tarefa à lista."""
     titulo = entrada_titulo.get().strip()
@@ -34,36 +36,11 @@ def adicionar_tarefa():
         print(f"Erro: {e}")
         return
 
-    try:
-        hoje = dtt.now()
-        data_limite = dtt.strptime(data, "%d-%m").replace(year=ano)
-        tempo_restante = (data_limite - hoje).days
-    except ValueError as e:
-        print(f"Erro: {e}")
-        print("Por favor, insira uma data válida no formato DD-MM.")
-        return
-
-    # Calcula o score com base no tempo restante e prioridade
-    score = 0
-    if tempo_restante < 0:
-        score = 17  # Tarefa atrasada
-    elif tempo_restante < 3:
-        score += 10
-    elif 3 <= tempo_restante < 7:
-        score += 5
-    elif 7 <= tempo_restante < 14:
-        score += 2
-    elif 14 <= tempo_restante:
-        score += 1
-    score += prioridade * 2
-
     # Adiciona a tarefa à lista
     tarefas.append({
         "titulo": titulo,
         "data": data,
         "prioridade": prioridade,
-        "tempo_restante": tempo_restante,
-        "score": score
     })
 
     # Limpa os campos de entrada
@@ -87,8 +64,44 @@ def concluir_tarefa(event=None):
 def mostrar_lista():
     """Exibe as tarefas no Listbox."""
     lista.delete(0, tk.END)  # Limpa o Listbox
+    calc_score()
     for tarefa in sorted(tarefas, key=lambda x: x["score"], reverse=True):
         lista.insert(tk.END, tarefa["titulo"])
+
+
+def calc_score():
+    """Calcula o score de cada tarefa com base no tempo restante e prioridade."""
+    hoje = dtt.now()  # Obtém a data atual uma vez para evitar múltiplas chamadas
+
+    for tarefa in tarefas:
+        try:
+            # Calcula o tempo restante
+            data_limite = dtt.strptime(tarefa["data"], "%d-%m").replace(year=ano)
+            tempo_restante = (data_limite - hoje).days
+
+            # Calcula o score com base no tempo restante e prioridade
+            if tempo_restante < 0:
+                score = 17  # Tarefa atrasada
+            elif tempo_restante < 3:
+                score = 10
+            elif tempo_restante < 7:
+                score = 5
+            elif tempo_restante < 14:
+                score = 2
+            else:
+                score = 1
+
+            # Adiciona o peso da prioridade ao score
+            score += tarefa["prioridade"] * 2
+
+            # Atualiza o score da tarefa
+            tarefa["score"] = score
+            tarefa["tempo_restante"] = tempo_restante  # Adiciona o tempo restante para uso futuro
+
+        except ValueError as e:
+            print(f"Erro ao calcular score para a tarefa '{tarefa['titulo']}': {e}")
+            tarefa["score"] = 999  # Define um score padrão para tarefas inválidas
+
 
 def carregar_tarefas():
     """Carrega as tarefas do arquivo JSON."""
