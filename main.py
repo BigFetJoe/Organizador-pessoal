@@ -1,51 +1,41 @@
 import tkinter as tk
 from datetime import datetime as dtt
 import json
-import os 
+import os
 
-# Declaração de variáveis globais
+# --- Variáveis Globais ---
 tarefas = []
 ano = dtt.now().year  # Obtém o ano atual
-hoje = dtt.now()
+caminho = os.path.expanduser("~/tarefas.json")  # Caminho do arquivo JSON
 
-# Cria a janela principal
-janela = tk.Tk()  # Instância da janela principal
-janela.title("Organizador de Tarefas")  # Título da janela
-janela.geometry("400x600")  # Tamanho: largura x altura em pixels
-
-# --- Frame de título ---
-frame_titulo = tk.Frame(janela)
-frame_titulo.pack(pady=10, fill="x")
-
-# --- Frame de entrada ---
-frame_entrada = tk.Frame(janela)
-frame_entrada.pack(padx=10, pady=1, fill="x")
-
-# Campo: Título
-tk.Label(frame_entrada, text="Título:").grid(row=0, column=0)
-entrada_titulo = tk.Entry(frame_entrada, width=30)
-entrada_titulo.grid(row=0, column=1)
+#\--\--\--\--\--\--\--\--\--\--\---\--\ JANELA \--\--\--\--\--\--\--\--\--\--\--\--\--\
+janela = tk.Tk()
+janela.title("Organizador de Tarefas")
+janela.geometry("400x600")
 
 
-# Campo: Data limite
-tk.Label(frame_entrada, text="Data (DD-MM):").grid(row=1, column=0)
-entrada_data = tk.Entry(frame_entrada, width=30)
-entrada_data.grid(row=1, column=1)
 
-# Campo: Prioridade
-tk.Label(frame_entrada, text="Prioridade (1 a 5):").grid(row=2, column=0)
-entrada_prioridade = tk.Entry(frame_entrada, width=30)
-entrada_prioridade.grid(row=2, column=1)
-
-
-# Função para capturar a tarefa
+# \--\--\--\--\--\--\--\--\--\ FUNÇÕES \--\--\--\--\--\--\--\--\--\--\--\--\--\--\--\
 def adicionar_tarefa():
-    titulo = entrada_titulo.get()
-    data = entrada_data.get()
-    prioridade = entrada_prioridade.get()
+    """Adiciona uma nova tarefa à lista."""
+    titulo = entrada_titulo.get().strip()
+    data = entrada_data.get().strip()
+    prioridade = entrada_prioridade.get().strip()
+
+    if not titulo or not data or not prioridade:
+        print("Erro: Todos os campos devem ser preenchidos.")
+        return
 
     try:
-        # Valida e converte a data inserida
+        prioridade = int(prioridade)
+        if prioridade < 1 or prioridade > 5:
+            raise ValueError("A prioridade deve estar entre 1 e 5.")
+    except ValueError as e:
+        print(f"Erro: {e}")
+        return
+
+    try:
+        hoje = dtt.now()
         data_limite = dtt.strptime(data, "%d-%m").replace(year=ano)
         tempo_restante = (data_limite - hoje).days
     except ValueError as e:
@@ -53,7 +43,7 @@ def adicionar_tarefa():
         print("Por favor, insira uma data válida no formato DD-MM.")
         return
 
-    # Calculo do score com base no tempo restante
+    # Calcula o score com base no tempo restante e prioridade
     score = 0
     if tempo_restante < 0:
         score = 17  # Tarefa atrasada
@@ -65,16 +55,9 @@ def adicionar_tarefa():
         score += 2
     elif 14 <= tempo_restante:
         score += 1
-    
-    score += int(prioridade)*2   # Adiciona a prioridade ao scored
+    score += prioridade * 2
 
-    # Exibe a tarefa no console
-    print(f"Tarefa adicionada: {titulo}")
-    print(f"Data limite: {data} ({tempo_restante} dias restantes)")
-    print(f"Prioridade: {prioridade}")
-    
-   #Adiciona a tarefa à lista de tarefas
-
+    # Adiciona a tarefa à lista
     tarefas.append({
         "titulo": titulo,
         "data": data,
@@ -83,67 +66,87 @@ def adicionar_tarefa():
         "score": score
     })
 
-    ###apaga os campos###
+    # Limpa os campos de entrada
     entrada_titulo.delete(0, tk.END)
     entrada_data.delete(0, tk.END)
     entrada_prioridade.delete(0, tk.END)
 
-    mostrar_lista
-    salvar_tarefas() 
+    # Atualiza a lista e salva as tarefas
+    mostrar_lista()
+    salvar_tarefas()
 
-
-def concluir_tarefa():
+def concluir_tarefa(event=None):
+    """Conclui a tarefa selecionada no Listbox."""
     selecao = lista.curselection()
     if selecao:
-        # Obtém o índice da tarefa selecionada
         indice = selecao[0]
-        # Remove a tarefa da lista
-        lista.delete(indice)
-        # Remove a tarefa da lista de tarefas
-        tarefas.remove(indice)
+        tarefas.pop(indice)  # Remove a tarefa da lista
+        mostrar_lista()  # Atualiza a lista exibida
+        salvar_tarefas()  # Salva as alterações no arquivo JSON
 
-        lista.delete(0, tk.END)  # Limpa a lista atual
-        for tarefa in sorted(tarefas, key=lambda x: x["score"], reverse=True):
-             lista.insert(tk.END, tarefa["titulo"])
-        
-        salvar_tarefas()  # Salva as tarefas atualizadas no arquivo JSON
+def mostrar_lista():
+    """Exibe as tarefas no Listbox."""
+    lista.delete(0, tk.END)  # Limpa o Listbox
+    for tarefa in sorted(tarefas, key=lambda x: x["score"], reverse=True):
+        lista.insert(tk.END, tarefa["titulo"])
 
-# Botão: Adicionar
+def carregar_tarefas():
+    """Carrega as tarefas do arquivo JSON."""
+    if os.path.exists(caminho):
+        with open(caminho, "r") as arquivo:
+            return json.load(arquivo)
+    return []
+
+def salvar_tarefas():
+    """Salva as tarefas no arquivo JSON."""
+    with open(caminho, "w", encoding="utf-8") as f:
+        json.dump(tarefas, f, indent=4)
+
+#\--\--\--\--\--\--\--\--\--\--\---\--\ WIDGETS \--\--\--\--\--\--\--\--\--\--\--\--\--\
+# Frame de Título
+frame_titulo = tk.Frame(janela)
+frame_titulo.pack(pady=10, fill="x")
+tk.Label(frame_titulo, text="Organizador de Tarefas", font=("Arial", 16)).pack()
+
+# Frame de Entrada
+frame_entrada = tk.Frame(janela)
+frame_entrada.pack(padx=10, pady=10, fill="x")
+
+# Campo: Título
+tk.Label(frame_entrada, text="Título:").grid(row=0, column=0)
+entrada_titulo = tk.Entry(frame_entrada, width=30)
+entrada_titulo.grid(row=0, column=1)
+
+# Campo: Data Limite
+tk.Label(frame_entrada, text="Data (DD-MM):").grid(row=1, column=0)
+entrada_data = tk.Entry(frame_entrada, width=30)
+entrada_data.grid(row=1, column=1)
+
+# Campo: Prioridade
+tk.Label(frame_entrada, text="Prioridade (1 a 5):").grid(row=2, column=0)
+entrada_prioridade = tk.Entry(frame_entrada, width=30)
+entrada_prioridade.grid(row=2, column=1)
+
+# Botão: Adicionar Tarefa
 botao_adicionar = tk.Button(janela, text="Adicionar Tarefa", command=adicionar_tarefa)
 botao_adicionar.pack(pady=10)
 
-##Lista##
+# Frame da Lista
 frame_lista = tk.Frame(janela, bg="lightgray")
-frame_lista.pack(padx=10, fill="both", expand=True)
+frame_lista.pack(padx=10, pady=10, fill="both", expand=True)
 
-ttlframelista = tk.Label(frame_lista, text = "lista de tarefas")
-ttlframelista.pack(pady=1, side="top", fill="x", expand=False)
+# Título da Lista
+tk.Label(frame_lista, text="Lista de Tarefas", bg="lightgray").pack(pady=5, fill="x")
 
+# Listbox
 lista = tk.Listbox(frame_lista)
 lista.pack(pady=10, fill="both", expand=True)
 lista.bind("<Double-Button-1>", concluir_tarefa)
 
 
-def mostrar_lista():
-    
-    
-    for tito in tarefas:
-        lista.insert(tk.END, tito["titulo"])
+#\--\--\--\--\--\--\--\--\--\--\---\--\ INICIALIZAÇÃO \--\--\--\--\--\--\--\--\--\--\--\--\--\
+tarefas = carregar_tarefas()  # Carrega as tarefas do arquivo JSON
+mostrar_lista()  # Exibe as tarefas carregadas
 
-
-def carregar_tarefas():
-    if os.path.exists("tarefas.json"):
-        with open("tarefas.json", "r") as arquivo:
-            return json.load(arquivo)
-        for tarefa in tarefas:
-            lista.insert(tk.END, tarefa["titulo"])
-    return []
-
-def salvar_tarefas():
-    with open("tarefas.json", "w") as arquivo:
-        json.dump(tarefas, arquivo, indent=4)
-botao_mostrar = tk.Button(janela, text="mostrar lista", command=mostrar_lista)
-botao_mostrar.pack(padx=10)
-
-# Loop principal da aplicação
-janela.mainloop()  # Mantém a janela aberta e aguardando ações do usuário
+# Loop Principal
+janela.mainloop()
