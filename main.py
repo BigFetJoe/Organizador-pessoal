@@ -1,11 +1,11 @@
 import tkinter as tk
-from tkinter import ttk
 from datetime import datetime as dtt
 import json
 import os
 
 # --- Variáveis Globais ---
 tarefas = []
+tarefas_exibidas = []
 ano = dtt.now().year  # Obtém o ano atual
 caminho = os.path.expanduser("~/tarefas.json")  # Caminho do arquivo JSON
 formatos_data = ["%d-%m", "%-d-%-m", "%d-%-m", "%-d-%m"]
@@ -13,7 +13,7 @@ formatos_data = ["%d-%m", "%-d-%-m", "%d-%-m", "%-d-%m"]
 #\--\--\--\--\--\--\--\--\--\--\---\--\ JANELA \--\--\--\--\--\--\--\--\--\--\--\--\--\
 janela = tk.Tk()
 janela.title("Organizador de Tarefas")
-janela.geometry("400x600")
+janela.geometry("500x600")
 
 
 
@@ -79,13 +79,11 @@ def calc_score():
             tempo_restante = (data_obj - hoje).days
 
             if tempo_restante < 0:
-                score += 17
+                score += 10
             elif tempo_restante < 3:
-                score += 12
-            elif tempo_restante < 7:
                 score += 7
-            elif tempo_restante < 14:
-                score += 3
+            elif tempo_restante < 7:
+                score += 5
 
             tarefa["tempo_restante"] = tempo_restante
         else:
@@ -108,6 +106,10 @@ def mostrar_lista():
     """Exibe as tarefas no Listbox."""
     lista.delete(0, tk.END)  # Limpa o Listbox
     calc_score()
+    global tarefas_exibidas
+    tarefas_exibidas = []  # Limpa a lista de tarefas exibidas  
+    tarefas_exibidas = sorted(tarefas, key=lambda x: x["score"], reverse=True)
+
     for tarefa in sorted(tarefas, key=lambda x: x["score"], reverse=True):
         titulo = tarefa["titulo"]
         prazo = tarefa.get("prazo_formatado", "sem prazo")
@@ -119,7 +121,12 @@ def concluir_tarefa(event=None):
     selecao = lista.curselection()
     if selecao:
         indice = selecao[0]
-        tarefas.pop(indice)  # Remove a tarefa da lista
+        tarefa_selecionada = tarefas_exibidas[indice]
+
+        if tarefa_selecionada in tarefas:
+            tarefas.remove(tarefa_selecionada)
+
+        tarefas_exibidas.pop(indice)  # Remove a tarefa da lista
         mostrar_lista()  # Atualiza a lista exibida
         salvar_tarefas()  # Salva as alterações no arquivo JSON
 
