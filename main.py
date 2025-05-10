@@ -7,6 +7,7 @@ import os
 tarefas = []
 tarefas_exibidas = []
 ano = dtt.now().year  # Obtém o ano atual
+mesatual = dtt.now().month  # Obtém o mês atual
 caminho = os.path.expanduser("~/tarefas.json")  # Caminho do arquivo JSON
 formatos_data = ["%d-%m", "%-d-%-m", "%d-%-m", "%-d-%m"]
 
@@ -43,12 +44,11 @@ def adicionar_tarefa():
         return
 
     if data_input:
-        data_input = data_input.replace("/", "-").replace(".", "-").replace(" ", "-")
         data_obj = interpretar_data(data_input)
+        if not data_obj:
+            data_obj = None
+            return
 
-    if not prioridade_input.isdigit() or not (1 <= int(prioridade_input) <= 5):
-        print("Erro: prioridade inválida (use 1 a 5).")
-        return
 
     prioridade = int(prioridade_input)
 
@@ -135,12 +135,35 @@ def interpretar_data(texto_data: str) -> dtt | None:
         return None
 
     texto_data = texto_data.replace("/", "-").replace(".", "-").replace(" ", "-")
-    for formato in formatos_data:
-        try:
-            return dtt.strptime(texto_data, formato).replace(year=ano)
-        except ValueError:
-            continue
-    return None
+
+    #até qui é usado o imput com -
+
+    dataret = None
+    
+    try:
+        if "-" not in texto_data:
+            dia = int(texto_data)
+            dataret = dtt(year=ano, month=mesatual, day=dia)
+        else :
+            for formato in formatos_data:
+                try:
+                    dataret = dtt.strptime(texto_data, formato).replace(year=ano)
+                    break
+                except ValueError:
+                    continue
+        if dataret is None:
+            raise ValueError("Formato de data inválido.")
+
+        if dataret.month < mesatual:
+            dataret = dataret.replace(year=ano + 1)
+
+        return dataret
+
+    except ValueError as e:
+        print(f"Erro: Data inválida '{texto_data}'.")
+        return None
+    
+
 
 ### --- ### SALVAR E CARREGAR ### --- ###
 
